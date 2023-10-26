@@ -39,6 +39,10 @@ func (cr *Controller) Init(filepath string) {
         fmt.Println("Error reading records")
     }
 
+	cr.InitSizing(records)
+}
+
+func (cr *Controller) InitSizing(records [][]string) {
 	numCols := len(records[0])
 	numRows := len(records)
 	totalSizes := numRows - 1
@@ -51,12 +55,6 @@ func (cr *Controller) Init(filepath string) {
 	for i := 1; i < numRows; i++ {
 		sizes[i-1] = records[i][0]
 	}
-
-	// fmt.Println(sizes)
-	// fmt.Println(numRows)
-	// fmt.Println(numCols)
-	// fmt.Println(totalSizes)
-	// fmt.Println(totalItems)
 
 	cr.Sizing = make(map[string]map[string]Size, totalItems)
 	for i := 0; i < totalItems; i++ {

@@ -2,94 +2,95 @@ package checker
 
 import (
 	"fmt"
-	// "os"
-	// "strings"
-	// "path/filepath"
-	// "bufio"
-	// "image"
-    // _ "image/jpeg"
+	"os"
+	"strings"
+	"path/filepath"
+	"bufio"
+	"image"
+    _ "image/jpeg"
 	"github.com/iwahing/image-layout-checker/src/template"
 )
 
+type Checker struct {
+	template template.Controller
+	folderPath string
+}
 
-// var sizing = map[string]map[string]Size{
-// 	"Assorted_Jersey": assortedJersey,
-// 	"Jersey": teamJersey,
-// 	"Short": short,
-// 	"Mesh_Short": meshShort,
-// 	"LONGSLEEVE": longsleeve,
-// 	"Hoodie": longsleeve,
-// 	"TSHIRT": tshirt,
-// 	"WARMER": warmer,
-// 	"JACKET": jacket,
-// }
+func (c *Checker) Init(templateFile string, folderPath string) {
+	c.template = template.Controller{}
+	c.template.Init(templateFile)
+	// c.template.PrintTemplate()
+	c.folderPath = folderPath
+}
 
-// var bannerSize = Size{3395, 2396}
+var bannerSize = template.Size{3395, 2396}
 
-// func GetDimension(filepath string) (int, int, error) {
-// 	f, err := os.Open(filepath)
-// 	if err != nil {
-// 		return 0, 0, err
-// 	}
+func (c *Checker) GetDimension(file string) (int, int, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return 0, 0, err
+	}
 
-// 	reader := bufio.NewReader(f)
+	reader := bufio.NewReader(f)
+	config, _, err:= image.DecodeConfig(reader)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-// 	// Decode image.
-// 	config, _, err:= image.DecodeConfig(reader)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
+	return config.Width, config.Height, nil
+}
 
-// 	return config.Width, config.Height, nil
-// }
+func (c *Checker) FileNameWithoutExtSliceNotation(fileName string) string {
+	return fileName[:len(fileName)-len(filepath.Ext(fileName))]
+}
 
-// func FileNameWithoutExtSliceNotation(fileName string) string {
-// 	return fileName[:len(fileName)-len(filepath.Ext(fileName))]
-// }
+func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
+	files, err := os.ReadDir(folderPath)
 
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 
-// func ScanFolder(folderPath string, sizeType string) []string {
-// 	files, err := os.ReadDir(folderPath)
+	var incorrectSizes []string
+	for _, file := range files {
+		fileName := file.Name()
 
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return nil
-// 	}
+		if filepath.Ext(fileName) == ".jpg" {
+			absFilePath := folderPath + "/" + fileName
+			size := strings.Split(c.FileNameWithoutExtSliceNotation(fileName), "_")
+			size[1] = strings.ToLower(size[1])
+			
+			name := size[0] + "_" + size[1] 
+			if len(size) > 3 {
+				name = size[0] + "_" + size[2] + "_" + size[1] 
+			} 
+				
+			width, height, err := c.GetDimension(absFilePath)
+			if err != nil {
+				fmt.Println("	-", name, " Error: ", err)
+				continue
+			}
 
-// 	var incorrectSizes []string
-// 	for _, file := range files {
-// 		fileName := file.Name()
+			actualSize := template.Size{width, height}
+			// fmt.Println(fmt.Sprintf("Item: %s | Size: %s", sizeType, size[1]))
+			if c.template.Sizing[sizeType][size[1]] == actualSize {
+				fmt.Println("	-", name, " Correct!")
+			} else {
+				fmt.Println("	-", name, " Incorrect")
+				incorrectSizes = append(incorrectSizes, name)
+			}
 
-// 		if filepath.Ext(fileName) == ".jpg" {
-// 			absFilePath := folderPath + "/" + fileName
-// 			size := strings.ToLower(strings.Split(FileNameWithoutExtSliceNotation(fileName), "_"))
-// 			name := size[0] + ":" + size[1]
+		}
+	}
 
-// 			width, height, err := GetDimension(absFilePath)
-// 			if err != nil {
-// 				fmt.Println("	-", name, " Error: ", err)
-// 				continue
-// 			}
+	return incorrectSizes
+}
 
-// 			actualSize := Size{width, height}
+func (c *Checker) Check() {
+    fmt.Println("Scanning folder '", c.folderPath, "'")
 
-// 			if sizing[sizeType][size[1]] == actualSize {
-// 				fmt.Println("	-", name, " Correct!")
-// 			} else {
-// 				fmt.Println("	-", name, " Incorrect")
-// 				incorrectSizes = append(incorrectSizes, name)
-// 			}
-
-// 		}
-// 	}
-
-// 	return incorrectSizes
-// }
-
-func Check(sizing map[string]map[string]template.Size, folderPath string) {
-    fmt.Println("Scanning folder '", folderPath, "'")
-
-    files, err := os.ReadDir(folderPath)
+    files, err := os.ReadDir(c.folderPath)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -97,7 +98,7 @@ func Check(sizing map[string]map[string]template.Size, folderPath string) {
 	var incorrectSizes []string
 	for _, file := range files {
 		filename := file.Name()
-		absPath := folderPath + "/" + filename
+		absPath := c.folderPath + "/" + filename
 
 		info, err := os.Stat(absPath)
 		if err != nil {
@@ -108,7 +109,7 @@ func Check(sizing map[string]map[string]template.Size, folderPath string) {
 		if info.IsDir() {
 			if filename == "Jersey" || filename == "Short" {
 				fmt.Println(filename)
-				result := ScanFolder(folderPath+"/"+filename, filename)
+				result := c.ScanFolder(c.folderPath+"/"+filename, strings.ToLower(filename))
 				if result != nil {
 					incorrectSizes = append(incorrectSizes, result...)
 				}
@@ -116,13 +117,13 @@ func Check(sizing map[string]map[string]template.Size, folderPath string) {
 				fmt.Println("Skipping ", filename)
 			}
 		} else if filename == "Banner.jpg" {
-			width, height, err := GetDimension(absPath)
+			width, height, err := c.GetDimension(absPath)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
-			actualSize := Size{width, height}
+			actualSize := template.Size{width, height}
 
 			if bannerSize == actualSize {
 				fmt.Println("Banner.jpg Correct!")
