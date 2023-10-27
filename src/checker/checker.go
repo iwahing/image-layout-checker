@@ -106,15 +106,14 @@ func (c *Checker) Check() {
 			continue
 		}
 
-		if info.IsDir() {
-			if filename == "Jersey" || filename == "Short" {
-				fmt.Println(filename)
-				result := c.ScanFolder(c.folderPath+"/"+filename, strings.ToLower(filename))
-				if result != nil {
-					incorrectSizes = append(incorrectSizes, result...)
-				}
-			} else {
-				fmt.Println("Skipping ", filename)
+		size := strings.ToLower(filename)
+		_, ok := c.template.Sizing[size]
+
+		if info.IsDir() && ok {
+			fmt.Println(filename)
+			result := c.ScanFolder(c.folderPath+"/"+filename, size)
+			if result != nil {
+				incorrectSizes = append(incorrectSizes, result...)
 			}
 		} else if filename == "Banner.jpg" {
 			width, height, err := c.GetDimension(absPath)
