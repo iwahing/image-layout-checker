@@ -1,4 +1,4 @@
-package template
+package checker
 
 import (
     "encoding/csv"

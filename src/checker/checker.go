@@ -8,22 +8,21 @@ import (
 	"bufio"
 	"image"
     _ "image/jpeg"
-	"github.com/iwahing/image-layout-checker/src/template"
 )
 
 type Checker struct {
-	template template.Controller
+	template Controller
 	folderPath string
 }
 
 func (c *Checker) Init(templateFile string, folderPath string) {
-	c.template = template.Controller{}
+	c.template = Controller{}
 	c.template.Init(templateFile)
-	// c.template.PrintTemplate()
+	// c.PrintTemplate()
 	c.folderPath = folderPath
 }
 
-var bannerSize = template.Size{3395, 2396}
+var bannerSize = Size{3395, 2396}
 
 func (c *Checker) GetDimension(file string) (int, int, error) {
 	f, err := os.Open(file)
@@ -60,19 +59,19 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 			absFilePath := folderPath + "/" + fileName
 			size := strings.Split(c.FileNameWithoutExtSliceNotation(fileName), "_")
 			size[1] = strings.ToLower(size[1])
-			
-			name := size[0] + "_" + size[1] 
+
+			name := size[0] + "_" + size[1]
 			if len(size) > 3 {
-				name = size[0] + "_" + size[2] + "_" + size[1] 
-			} 
-				
+				name = size[0] + "_" + size[2] + "_" + size[1]
+			}
+
 			width, height, err := c.GetDimension(absFilePath)
 			if err != nil {
 				fmt.Println("	-", name, " Error: ", err)
 				continue
 			}
 
-			actualSize := template.Size{width, height}
+			actualSize := Size{width, height}
 			// fmt.Println(fmt.Sprintf("Item: %s | Size: %s", sizeType, size[1]))
 			if c.template.Sizing[sizeType][size[1]] == actualSize {
 				fmt.Println("	-", name, " Correct!")
@@ -122,7 +121,7 @@ func (c *Checker) Check() {
 				continue
 			}
 
-			actualSize := template.Size{width, height}
+			actualSize := Size{width, height}
 
 			if bannerSize == actualSize {
 				fmt.Println("Banner.jpg Correct!")
