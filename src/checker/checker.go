@@ -1,17 +1,17 @@
 package checker
 
 import (
-	"fmt"
-	"os"
-	"strings"
-	"path/filepath"
 	"bufio"
+	"fmt"
 	"image"
-    _ "image/jpeg"
+	_ "image/jpeg"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Checker struct {
-	template Controller
+	template   Controller
 	folderPath string
 }
 
@@ -31,7 +31,7 @@ func (c *Checker) GetDimension(file string) (int, int, error) {
 	}
 
 	reader := bufio.NewReader(f)
-	config, _, err:= image.DecodeConfig(reader)
+	config, _, err := image.DecodeConfig(reader)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -87,9 +87,9 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 }
 
 func (c *Checker) Check() {
-    fmt.Println("Scanning folder '", c.folderPath, "'")
+	fmt.Println("Scanning folder '", c.folderPath, "'")
 
-    files, err := os.ReadDir(c.folderPath)
+	files, err := os.ReadDir(c.folderPath)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -136,4 +136,5 @@ func (c *Checker) Check() {
 	}
 
 	fmt.Printf("# Failed resize: %v\n", incorrectSizes)
+	return
 }

@@ -1,7 +1,8 @@
 package application
 
-
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -10,79 +11,115 @@ import (
 	"github.com/iwahing/image-layout-checker/src/checker"
 )
 
-type Appication struct {
-	app     		fyne.App
-	mainWin 		fyne.Window
+type Application struct {
+	app     fyne.App
+	mainWin fyne.Window
 
-	templateFile	*widget.Label
-	teamFolder		*widget.Label
+	templateFile *widget.Entry
+	teamFolder   *widget.Entry
+	status       *widget.Entry
 
-	template		string
-	team			string
+	template string
+	team     string
 }
 
-func (this *Appication) Init(){
-	this.app = app.New()
+func (a *Application) Init() {
+	a.app = app.New()
 
-	this.mainWin = this.app.NewWindow("Image Layout Checker")
+	a.mainWin = a.app.NewWindow("Image Layout Checker")
 
-	this.templateFile = widget.NewLabel("template")
-	this.teamFolder = widget.NewLabel("team")
+	a.templateFile = widget.NewEntry()
+	a.templateFile.SetPlaceHolder("Template File...")
+	a.templateFile.Disable()
+	a.teamFolder = widget.NewEntry()
+	a.teamFolder.SetPlaceHolder("Team Folder...")
+	a.teamFolder.Disable()
 
-	this.template = ""
-	this.team = ""
+	a.status = widget.NewEntry()
+	a.status.MultiLine = true
+	a.status.Disable()
+	// a.app.Settings().SetTheme(&MyTheme{})
 
-	this.mainWin.SetContent(this.makeGUI())
-	this.mainWin.Resize(fyne.NewSize(1200, 750))
-	this.mainWin.ShowAndRun()
+	a.template = ""
+	a.team = ""
+
+	a.mainWin.SetContent(a.makeGUI())
+	a.mainWin.Resize(fyne.NewSize(700, 550))
+	a.mainWin.ShowAndRun()
 }
 
-func (this *Appication) makeGUI() fyne.CanvasObject {
+func (a *Application) makeGUI() fyne.CanvasObject {
 	main := container.NewVBox(
-		this.templateFile,
-		widget.NewButton("Select Template File", this.openTemplateFile),
-		this.teamFolder,
-		widget.NewButton("Select Team Folder", this.openTeamFolder),
-		widget.NewButton("Check", this.checkFiles),
+		a.templateFile,
+		widget.NewButton("Select Template File", a.openTemplateFile),
+		a.teamFolder,
+		widget.NewButton("Select Team Folder", a.openTeamFolder),
+		widget.NewButton("Check", a.checkFiles),
+		a.status,
 	)
 
 	return main
 }
 
-func (this *Appication) openTemplateFile() {
-	// this.content.SetText("Welcome :)")
+func (a *Application) openTemplateFile() {
 	fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-        if err != nil {
-            // Handle error
-            return
-        }
-        // Read file contents from reader
-		this.template = reader.URI().String()
-		this.templateFile.SetText("Template File:" + reader.URI().String())
-		}, this.mainWin)
+		if err != nil {
+			// Handle error
+			fmt.Println("Error")
+			fmt.Println(err)
+			return
+		}
+		// Read file contents from reader
 
-	fileDialog.Resize(fyne.NewSize(900, 500))
+		if reader.URI() != nil {
+			a.template = reader.URI().Path()
+			a.templateFile.SetText(reader.URI().Path())
+		}
+
+	}, a.mainWin)
+
+	fileDialog.Resize(fyne.NewSize(650, 500))
 	fileDialog.Show()
 }
 
-func (this *Appication) openTeamFolder() {
-	// this.content.SetText("Welcome :)")
-	fileDialog := dialog.NewFolderOpen(func(list  fyne.ListableURI, err error) {
-        if err != nil {
-            // Handle error
-            return
-        }
-        // Read file contents from reader\
-		this.team = list.String()
-		this.teamFolder.SetText("Team Folder:" + list.String())
-		}, this.mainWin)
+func (a *Application) openTeamFolder() {
+	fileDialog := dialog.NewFolderOpen(func(list fyne.ListableURI, err error) {
+		if err != nil {
+			// Handle error
+			fmt.Println("Error")
+			fmt.Println(err)
+			return
+		}
+		// Read file contents from reader
+		a.team = list.Path()
+		a.teamFolder.SetText(list.Path())
+	}, a.mainWin)
 
-	fileDialog.Resize(fyne.NewSize(900, 500))
+	fileDialog.Resize(fyne.NewSize(650, 500))
 	fileDialog.Show()
 }
 
-func (this *Appication) checkFiles() {
+func (a *Application) checkFiles() {
+
+	if a.template == "" {
+		a.app.SendNotification(fyne.NewNotification("Template File empty", "Template File has not been selected"))
+		a.status.SetText("Template File has not been selected")
+		a.status.TextStyle.Bold = true
+		a.status.TextStyle.Italic = true
+		a.status.Refresh()
+		return
+	}
+
+	if a.team == "" {
+		a.app.SendNotification(fyne.NewNotification("Team Folder empty", "Team Folder has not been selected"))
+		a.status.SetText("Team Folder has not been selected")
+		a.status.TextStyle.Bold = true
+		a.status.TextStyle.Italic = true
+		a.status.Refresh()
+		return
+	}
+
 	c := checker.Checker{}
-	c.Init(this.template, this.team)
+	c.Init(a.template, a.team)
 	c.Check()
 }
