@@ -29,18 +29,20 @@ func (a *Application) Init() {
 	a.mainWin = a.app.NewWindow("Image Layout Checker")
 
 	a.templateFile = widget.NewEntry()
-	a.templateFile.SetPlaceHolder("Template File...")
+	a.templateFile.SetPlaceHolder("./sizing.csv")
 	a.templateFile.Disable()
 	a.teamFolder = widget.NewEntry()
 	a.teamFolder.SetPlaceHolder("Team Folder...")
-	a.teamFolder.Disable()
 
 	a.status = widget.NewEntry()
 	a.status.MultiLine = true
-	a.status.Disable()
+	a.status.TextStyle.Bold = true
+	a.status.TextStyle.Italic = true
+	a.status.TextStyle.Monospace = true
+	// a.status.Disable()
 	// a.app.Settings().SetTheme(&MyTheme{})
 
-	a.template = ""
+	a.template = "./sizing.csv"
 	a.team = ""
 
 	a.mainWin.SetContent(a.makeGUI())
@@ -48,8 +50,13 @@ func (a *Application) Init() {
 	a.mainWin.ShowAndRun()
 }
 
+// func (a *Application) newTheme() fyne.Theme {
+// 	theme := &fyne.Theme{Size: 15}
+// 	return theme
+// }
+
 func (a *Application) makeGUI() fyne.CanvasObject {
-	main := container.NewVBox(
+	content := container.NewVBox(
 		a.templateFile,
 		widget.NewButton("Select Template File", a.openTemplateFile),
 		a.teamFolder,
@@ -57,6 +64,8 @@ func (a *Application) makeGUI() fyne.CanvasObject {
 		widget.NewButton("Check", a.checkFiles),
 		a.status,
 	)
+
+	main := container.NewBorder(nil, nil, nil, nil, content)
 
 	return main
 }
@@ -70,8 +79,7 @@ func (a *Application) openTemplateFile() {
 			return
 		}
 		// Read file contents from reader
-
-		if reader.URI() != nil {
+		if reader != nil {
 			a.template = reader.URI().Path()
 			a.templateFile.SetText(reader.URI().Path())
 		}
@@ -91,8 +99,11 @@ func (a *Application) openTeamFolder() {
 			return
 		}
 		// Read file contents from reader
-		a.team = list.Path()
-		a.teamFolder.SetText(list.Path())
+		if list != nil {
+			a.team = list.Path()
+			a.teamFolder.SetText(list.Path())
+		}
+
 	}, a.mainWin)
 
 	fileDialog.Resize(fyne.NewSize(650, 500))
@@ -104,8 +115,6 @@ func (a *Application) checkFiles() {
 	if a.template == "" {
 		a.app.SendNotification(fyne.NewNotification("Template File empty", "Template File has not been selected"))
 		a.status.SetText("Template File has not been selected")
-		a.status.TextStyle.Bold = true
-		a.status.TextStyle.Italic = true
 		a.status.Refresh()
 		return
 	}
@@ -113,13 +122,12 @@ func (a *Application) checkFiles() {
 	if a.team == "" {
 		a.app.SendNotification(fyne.NewNotification("Team Folder empty", "Team Folder has not been selected"))
 		a.status.SetText("Team Folder has not been selected")
-		a.status.TextStyle.Bold = true
-		a.status.TextStyle.Italic = true
 		a.status.Refresh()
 		return
 	}
 
 	c := checker.Checker{}
 	c.Init(a.template, a.team)
-	c.Check()
+	a.status.SetText(c.Check())
+	a.status.Refresh()
 }

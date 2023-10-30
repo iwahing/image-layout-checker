@@ -11,14 +11,13 @@ go run .
 ```bash
 fyne-cross windows -arch=amd64
 ```
-
-![Alt text](img/image-2.png)
+![High Level](image-2.png)
 
 ### Template File
 File must be in .csv format and should follow this file formatting
-![sizing.csv](img/image.png)
+![sizing.csv](image.png)
 
 
 ### Foldering format
 Folder must follow template to match
-![Alt text](img/image-1.png)
+![Folder](image-1.png)

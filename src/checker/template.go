@@ -1,16 +1,15 @@
 package checker
 
 import (
-    "encoding/csv"
-    "fmt"
-    "log"
-    "os"
-	"strings"
+	"encoding/csv"
+	"fmt"
+	"os"
 	"strconv"
+	"strings"
 )
 
 type Size struct {
-	Width int
+	Width  int
 	Height int
 }
 
@@ -19,15 +18,9 @@ type Controller struct {
 }
 
 func (cr *Controller) Init(filepath string) {
-	if filepath == "" {
-		filepath = "sizing.csv"
-	}
-
-	fmt.Println("Reading Template File'", filepath, "'")
-
 	file, err := os.OpenFile(filepath, os.O_RDONLY, 0644)
 	if err != nil {
-		log.Fatal("Failed to open file", err)
+		fmt.Println("Failed to open file", err)
 		return
 	}
 
@@ -35,9 +28,9 @@ func (cr *Controller) Init(filepath string) {
 	reader := csv.NewReader(file)
 
 	records, err := reader.ReadAll()
-    if err != nil {
-        fmt.Println("Error reading records")
-    }
+	if err != nil {
+		fmt.Println("Error reading records")
+	}
 
 	cr.InitSizing(records)
 }
@@ -58,14 +51,14 @@ func (cr *Controller) InitSizing(records [][]string) {
 
 	cr.Sizing = make(map[string]map[string]Size, totalItems)
 	for i := 0; i < totalItems; i++ {
-		cr.Sizing[fmt.Sprintf("%s", items[i])] = make(map[string]Size, totalSizes-1)
+		cr.Sizing[items[i]] = make(map[string]Size, totalSizes-1)
 	}
 
 	for col := 1; col < numCols; col++ {
 		for row := 1; row < numRows; row++ {
 
 			if records[row][col] == "" {
-				cr.Sizing[fmt.Sprintf("%s", items[col-1])][fmt.Sprintf("%s", sizes[row-1])] = Size{0, 0}
+				cr.Sizing[items[col-1]][sizes[row-1]] = Size{0, 0}
 				continue
 			}
 
@@ -80,16 +73,16 @@ func (cr *Controller) InitSizing(records [][]string) {
 				fmt.Println("Error converting string to integer")
 			}
 
-			cr.Sizing[fmt.Sprintf("%s", items[col-1])][fmt.Sprintf("%s", sizes[row-1])] = Size{width, height}
+			cr.Sizing[items[col-1]][sizes[row-1]] = Size{width, height}
 		}
 	}
 }
 
 func (cr *Controller) PrintTemplate() {
-    for item, sizes := range cr.Sizing {
-        fmt.Println(item)
-        for size, value := range sizes {
-            fmt.Printf("\t%s: %dx%d\n", size, value.Width, value.Height)
-        }
-    }
+	for item, sizes := range cr.Sizing {
+		fmt.Println(item)
+		for size, value := range sizes {
+			fmt.Printf("\t%s: %dx%d\n", size, value.Width, value.Height)
+		}
+	}
 }

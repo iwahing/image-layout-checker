@@ -13,10 +13,13 @@ import (
 type Checker struct {
 	template   Controller
 	folderPath string
+	builder    strings.Builder
 }
 
 func (c *Checker) Init(templateFile string, folderPath string) {
+	c.builder = strings.Builder{}
 	c.template = Controller{}
+	c.builder.WriteString("Reading Template File'" + templateFile + "'\n")
 	c.template.Init(templateFile)
 	// c.PrintTemplate()
 	c.folderPath = folderPath
@@ -33,7 +36,8 @@ func (c *Checker) GetDimension(file string) (int, int, error) {
 	reader := bufio.NewReader(f)
 	config, _, err := image.DecodeConfig(reader)
 	if err != nil {
-		fmt.Println(err)
+		c.builder.WriteString(fmt.Sprintf("%v\n", err))
+		return 0, 0, err
 	}
 
 	return config.Width, config.Height, nil
@@ -47,7 +51,7 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 	files, err := os.ReadDir(folderPath)
 
 	if err != nil {
-		fmt.Println(err)
+		c.builder.WriteString(fmt.Sprintf("%v\n", err))
 		return nil
 	}
 
@@ -67,16 +71,15 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 
 			width, height, err := c.GetDimension(absFilePath)
 			if err != nil {
-				fmt.Println("	-", name, " Error: ", err)
+				c.builder.WriteString(fmt.Sprintf("	-%s Error: %v\n", name, err))
 				continue
 			}
 
 			actualSize := Size{width, height}
-			// fmt.Println(fmt.Sprintf("Item: %s | Size: %s", sizeType, size[1]))
 			if c.template.Sizing[sizeType][size[1]] == actualSize {
-				fmt.Println("	-", name, " Correct!")
+				c.builder.WriteString("	-" + name + " Correct!\n")
 			} else {
-				fmt.Println("	-", name, " Incorrect")
+				c.builder.WriteString("	-" + name + " Incorrect!\n")
 				incorrectSizes = append(incorrectSizes, name)
 			}
 
@@ -86,12 +89,15 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 	return incorrectSizes
 }
 
-func (c *Checker) Check() {
-	fmt.Println("Scanning folder '", c.folderPath, "'")
+func (c *Checker) Check() string {
+	c.builder = strings.Builder{}
+
+	c.builder.WriteString(fmt.Sprintf("Scanning folder '%s'\n", c.folderPath))
 
 	files, err := os.ReadDir(c.folderPath)
 	if err != nil {
-		fmt.Println(err)
+		c.builder.WriteString(fmt.Sprintf("%v\n", err))
+		return c.builder.String()
 	}
 
 	var incorrectSizes []string
@@ -101,7 +107,7 @@ func (c *Checker) Check() {
 
 		info, err := os.Stat(absPath)
 		if err != nil {
-			fmt.Println(err)
+			c.builder.WriteString(fmt.Sprintf("%v\n", err))
 			continue
 		}
 
@@ -109,7 +115,7 @@ func (c *Checker) Check() {
 		_, ok := c.template.Sizing[size]
 
 		if info.IsDir() && ok {
-			fmt.Println(filename)
+			c.builder.WriteString(filename + "\n")
 			result := c.ScanFolder(c.folderPath+"/"+filename, size)
 			if result != nil {
 				incorrectSizes = append(incorrectSizes, result...)
@@ -117,24 +123,25 @@ func (c *Checker) Check() {
 		} else if filename == "Banner.jpg" {
 			width, height, err := c.GetDimension(absPath)
 			if err != nil {
-				fmt.Println(err)
+				c.builder.WriteString(fmt.Sprintf("%v", err))
 				continue
 			}
 
 			actualSize := Size{width, height}
 
 			if bannerSize == actualSize {
-				fmt.Println("Banner.jpg Correct!")
+				c.builder.WriteString("Banner.jpg Correct!\n")
 			} else {
-				fmt.Println("Banner.jpg Incorrect")
+				c.builder.WriteString("Banner.jpg Incorrect!\n")
 				incorrectSizes = append(incorrectSizes, "Banner")
 			}
 
 		} else {
-			fmt.Println("Skipping ", filename)
+			c.builder.WriteString("Skipping " + filename + "\n")
 		}
 	}
 
-	fmt.Printf("# Failed resize: %v\n", incorrectSizes)
-	return
+	c.builder.WriteString(fmt.Sprintf("# Failed resize: %v\n", incorrectSizes))
+
+	return c.builder.String()
 }
