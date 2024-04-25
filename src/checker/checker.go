@@ -56,18 +56,27 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 	}
 
 	var incorrectSizes []string
+	sizing, ok := c.template.Sizing[sizeType]
+	if !ok {
+		c.builder.WriteString("No Size Template for" + sizeType + "Skipping folder: " + folderPath + "\n")
+		return incorrectSizes
+	}
+
 	for _, file := range files {
 		fileName := file.Name()
 
 		if filepath.Ext(fileName) == ".jpg" {
 			absFilePath := folderPath + "/" + fileName
 			size := strings.Split(c.FileNameWithoutExtSliceNotation(fileName), "_")
-			size[1] = strings.ToLower(size[1])
 
-			name := size[0] + "_" + size[1]
-			if len(size) > 3 {
-				name = size[0] + "_" + size[2] + "_" + size[1]
+			if len(size) != 3 {
+				c.builder.WriteString("	-" + fileName + " Incorrect File Name Format!\n")
+				incorrectSizes = append(incorrectSizes, fileName)
+				continue
 			}
+
+			size[2] = strings.ToLower(size[2])
+			name := size[0] + "_" + size[1] + "_" + size[2]
 
 			width, height, err := c.GetDimension(absFilePath)
 			if err != nil {
@@ -76,7 +85,14 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 			}
 
 			actualSize := Size{width, height}
-			if c.template.Sizing[sizeType][size[1]] == actualSize {
+
+			correctSize, ok := sizing[size[2]]
+			if !ok {
+				c.builder.WriteString("	-" + name + " size " + size[2] + " not found in " + sizeType + "\n")
+				continue
+			}
+
+			if correctSize == actualSize {
 				c.builder.WriteString("	-" + name + " Correct!\n")
 			} else {
 				c.builder.WriteString("	-" + name + " Incorrect!\n")
@@ -87,6 +103,16 @@ func (c *Checker) ScanFolder(folderPath string, sizeType string) []string {
 	}
 
 	return incorrectSizes
+}
+
+func (c *Checker) formatString(data []string) string {
+	builder := strings.Builder{}
+
+	for _, str := range data {
+		builder.WriteString("\t" + str + "\n")
+	}
+
+	return builder.String()
 }
 
 func (c *Checker) Check() string {
@@ -141,7 +167,7 @@ func (c *Checker) Check() string {
 		}
 	}
 
-	c.builder.WriteString(fmt.Sprintf("# Failed resize: %v\n", incorrectSizes))
+	c.builder.WriteString(fmt.Sprintf("# Failed resize:" + c.formatString(incorrectSizes)))
 
 	return c.builder.String()
 }
